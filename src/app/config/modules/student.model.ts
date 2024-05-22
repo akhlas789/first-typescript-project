@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import validator from "validator";
 import {
   Guardian,
   LocalGardient,
@@ -6,13 +7,22 @@ import {
   UserName,
 } from "./student/student.interface";
 
-const studentInfoSchema = new Schema<UserName>({
-  firstName: { type: String, required: true },
-  middleName: { type: String },
-  lastName: { type: String, required: true },
+// Schema for UserName
+const userNameSchema = new Schema<UserName>({
+  firstName: {
+    type: String,
+    required: [true, "first name lagbay lagba"],
+    trim: true,
+  },
+  middleName: { type: String, required: false }, // Made optional
+  lastName: {
+    type: String,
+    required: [true, "lastName is requare true"],
+  },
 });
 
-const gardianSchema = new Schema<Guardian>({
+// Schema for Guardian
+const guardianSchema = new Schema<Guardian>({
   fatherName: { type: String, required: true },
   fatherOccupation: { type: String, required: true },
   fatherContact: { type: Number, required: true },
@@ -21,27 +31,50 @@ const gardianSchema = new Schema<Guardian>({
   motherContact: { type: Number, required: true },
 });
 
+// Schema for LocalGardient
 const localGardientSchema = new Schema<LocalGardient>({
   name: { type: String, required: true },
   occupation: { type: String, required: true },
   contactNo: { type: Number, required: true },
 });
 
-export const studentSchema = new Schema<Student>({
-  id: { type: Number },
-  name: studentInfoSchema,
-  gender: ["male", "femele"],
+// Main schema for Student
+const studentSchema = new Schema<Student>({
+  id: { type: Number, required: true, unique: true },
+  name: { type: userNameSchema, required: true },
+  gender: {
+    type: String,
+    enum: {
+      values: ["male", "femele"],
+      message:
+        "the gender feild can only be one of the flowing : 'male','femele', or'other'.",
+    },
+    required: true,
+  },
   conTactNo: { type: Number, required: true },
-  dteOfBarth: { type: String },
-  emergencyContact: { type: Number },
-  email: { type: String },
-  bloodGroup: ["AB+", "AB-", "O+", "O-", "A+", "A-", "B+", "B-"],
-  presentAddress: { type: String },
-  parmanentAddress: { type: String },
-  gardian: gardianSchema,
-  localGardient: localGardientSchema,
-  isActive: ["active", "block"],
-  profileImg: { type: String },
+  dteOfBarth: { type: String, required: true },
+  emergencyContact: { type: Number, required: false },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    validate: {
+      validator: (value: string) => validator.isEmail(value),
+      message: "{Value}is not a valid email type",
+    },
+  },
+  bloodGroup: {
+    type: String,
+    enum: ["AB+", "AB-", "O+", "O-", "A+", "A-", "B+", "B-"],
+    required: false,
+  },
+  presentAddress: { type: String, required: false },
+  parmanentAddress: { type: String, required: false },
+  gardian: { type: guardianSchema, required: true },
+  localGardient: { type: localGardientSchema, required: true },
+  isActive: { type: String, enum: ["active", "block"], required: true },
+  profileImg: { type: String, required: false },
 });
 
+// Model creation
 export const StudentModel = model<Student>("Student", studentSchema);
